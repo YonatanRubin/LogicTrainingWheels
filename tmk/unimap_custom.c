@@ -43,6 +43,8 @@ enum macro_id {
     LIG_2,
     LIG_3,
     LIG__semicolon_,
+    LIG__comma_,
+    LIG__equal_,
     LIG__period_,
 };
 
@@ -87,7 +89,9 @@ enum modifier_id {
 #define AC_FN32 ACTION_MACRO(LIG_2)
 #define AC_FN33 ACTION_MACRO(LIG_3)
 #define AC_FN34 ACTION_MACRO(LIG__semicolon_)
-#define AC_FN35 ACTION_MACRO(LIG__period_)
+#define AC_FN35 ACTION_MACRO(LIG__comma_)
+#define AC_FN36 ACTION_MACRO(LIG__equal_)
+#define AC_FN37 ACTION_MACRO(LIG__period_)
 
 #ifdef KEYMAP_SECTION_ENABLE
 const action_t actionmaps[][UNIMAP_ROWS][UNIMAP_COLS] __attribute__ ((section (".keymap.keymaps"))) = {
@@ -98,7 +102,7 @@ const action_t actionmaps[][UNIMAP_ROWS][UNIMAP_COLS] PROGMEM = {
     [0] = UNIMAP(
                F13, F14, F15, F16, F17, F18, F19, F20, F21, F22, F23, F24,
      ESC,       F1,  F2,  F3,  F4,  F5,  F6,  F7,  F8,  F9, F10, F11, F12,          PSCR,SLCK,PAUS,         VOLD,VOLU,MUTE,
-     FN0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   0,MINS, EQL,JYEN,BSPC,      INS,HOME,PGUP,    NLCK,PSLS,PAST,PMNS,
+     FN0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   0,  NO,  NO,JYEN,BSPC,      INS,HOME,PGUP,    NLCK,PSLS,PAST,PMNS,
      TAB, FN1, FN2, FN3, FN4, FN5, FN6, FN7, FN8, FN9,FN10,FN11,FN12,       NO,      DEL, END,PGDN,      P7,  P8,  P9,PPLS,
     CAPS,FN13,FN14,FN15,FN16,FN17,FN18,FN19,FN20,FN21,FN22, FN0,     NUHS, ENT,                          P4,  P5,  P6,PCMM,
     FN23,NUBS,FN24,FN25,FN26,FN27,FN28,FN29,FN30,  NO,  NO,SLSH,       RO,FN31,            UP,           P1,  P2,  P3,PENT,
@@ -109,9 +113,9 @@ const action_t actionmaps[][UNIMAP_ROWS][UNIMAP_COLS] PROGMEM = {
               TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,
     TRNS,     TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,          TRNS,TRNS,TRNS,         TRNS,TRNS,TRNS,
      GRV, GRV,FN32,FN33,TRNS,TRNS,  NO,TRNS,TRNS,TRNS,TRNS,   F,   T,TRNS,TRNS,     TRNS,TRNS,TRNS,    TRNS,TRNS,TRNS,TRNS,
-    TRNS,   Q,   W,   E,   R,   T,   Y,   U,   I,   O,   P,   9,   0,     TRNS,     TRNS,TRNS,TRNS,    TRNS,TRNS,TRNS,TRNS,
-    TRNS,   A,   S,   D,   F,   G,   H,   J,   K,   L,FN34, GRV,     TRNS,TRNS,                        TRNS,TRNS,TRNS,TRNS,
-    TRNS,TRNS,   Z,  NO,   C,   V,   B,   N,   M,TRNS,FN35,FN34,     TRNS,TRNS,          TRNS,         TRNS,TRNS,TRNS,TRNS,
+    TRNS,   Q,   W,  NO,   R,   T,   Y,   U,   I,   O,FN34,FN35,FN36,     TRNS,     TRNS,TRNS,TRNS,    TRNS,TRNS,TRNS,TRNS,
+    TRNS,  NO,   S,   D,   F,   G,   H,   J,   K,   L,SCLN, GRV,     TRNS,TRNS,                        TRNS,TRNS,TRNS,TRNS,
+    TRNS,TRNS,   Z,  NO,   C,   V,   B,   N,   M,TRNS,FN37,FN34,     TRNS,TRNS,          TRNS,         TRNS,TRNS,TRNS,TRNS,
     TRNS,TRNS,TRNS,TRNS,          TRNS,          TRNS,TRNS,TRNS,TRNS,TRNS,TRNS,     TRNS,TRNS,TRNS,    TRNS,     TRNS,TRNS
     ),
 };
@@ -249,6 +253,14 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt) {
         case LIG__semicolon_:
             return record->event.pressed ?
                    MACRO(SM(), CM(), T(SCLN), RM(), END) :
+                   MACRO_NONE;
+        case LIG__comma_:
+            return record->event.pressed ?
+                   MACRO(SM(), CM(), T(COMM), RM(), END) :
+                   MACRO_NONE;
+        case LIG__equal_:
+            return record->event.pressed ?
+                   MACRO(SM(), CM(), T(EQL), RM(), END) :
                    MACRO_NONE;
         case LIG__period_:
             return record->event.pressed ?
