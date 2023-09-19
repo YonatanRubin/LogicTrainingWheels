@@ -45,4 +45,5 @@ First copy the exercises from the book to the `H` column. The `F` column removes
 Now in the `A` column select your exercise using by calling the cell in F referencing the exercise (for example `=F1`).  
 
 From here it is mostly your own job - solve the exercise. 
-**TBD**: integrate the verification script as a macro to integrate the verification in the proof workflow 
+**TBD**: integrate the verification script as a macro to allow quick verification in the proof workflow
+**TBD** add macro to "cross" the showlines at the end of a proof
