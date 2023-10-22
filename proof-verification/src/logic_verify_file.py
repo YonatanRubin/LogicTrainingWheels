@@ -1,13 +1,16 @@
 from openpyxl import *
 from openpyxl.styles import PatternFill
-from openpyxl.workbook import workbook
-from openpyxl.xml import lxml_available
 import logic_rules as proof
 from tkinter.filedialog import askopenfilename
 from shutil import which
 import shlex
+import configparser
 import os
+import re
 
+langmap = configparser.ConfigParser()
+
+ERROR = PatternFill(start_color="2d0c45", end_color="2d0c45", fill_type="solid")
 RED = PatternFill(start_color="00FF0000", end_color="00FF0000", fill_type="solid")
 GREEN = PatternFill(start_color="0000FF00", end_color="0000FF00", fill_type="solid")
 YELLOW = PatternFill(start_color="FFFF0000", end_color="FFFF0000", fill_type="solid")
@@ -19,6 +22,10 @@ def always_valid(*args, **kwargs):
 
 def always_invalid(*args, **kwargs):
     return False
+
+
+def ignore(*args, **kwargs):
+    return None
 
 
 reason_map = {
@@ -42,14 +49,29 @@ reason_map = {
     "∃I": proof.exist_in,
     "~∃O": proof.not_exist_out,
     "PR": always_valid,
-    "AS": always_valid,
+    "AS": ignore,
+}
+
+show_map = {
+    "DD": (0, always_valid),
+    "~D": (2, proof.show_td),
+    "ID": (2, proof.show_id),
+    "CD": (2, proof.show_cd),
+    "∀D": (1, proof.show_ud),
+    "UD": (1, proof.show_ud)
 }
 
 
 def extract_reason(line):
-    reasons = line.split(" ")
-    verification_method = reason_map.get(reasons[-1].upper(), always_invalid)
-    return [int(i) for i in reasons[:-1]], verification_method
+    line = clean_language(line)
+    rule = re.findall(r"[^0-9\ \,\.]+", line)
+    sources = re.findall(r"[0-9]+", line)
+    verification_method = reason_map.get(rule[0].upper(), always_invalid)
+    return [int(i) for i in sources], verification_method
+
+
+def extract_show_follow(tp):
+    return show_map[tp.upper()]
 
 
 def find_start(column):
@@ -58,10 +80,71 @@ def find_start(column):
             return index + 1
 
 
+def clean_language(line):
+    if "symbols" not in langmap:
+        return line
+    for operand, symbol in langmap["symbols"].items():
+        line = line.replace(symbol, proof.default_language[operand])
+    return line
+
+
 def clean_line(line):
     if not line:
         return line
+    line = clean_language(line)
     return line.replace("[", "(").replace("]", ")").replace(" ", "").rstrip()
+
+
+def handle_showline(sheet, index):
+    tp = clean_language(sheet.cell(index, 3).value)
+    if tp is None or tp == "":
+        sheet.cell(index, 3).fill = YELLOW
+        return
+    p = re.compile("show:?", re.IGNORECASE)
+    show = proof.shunting_yard_statement(p.sub("", clean_line(sheet.cell(index, 2).value)))
+    following_size, rule = extract_show_follow(tp)
+    following = [p.sub("", clean_line(sheet.cell(index + line + 1, 2).value)) for line in range(following_size)]
+    following = list(map(proof.shunting_yard_statement, following))
+
+    if len(following) <= 1:
+        valid = rule(show, *following)
+    else:
+        valid = rule(show, following)
+
+    if valid is None:
+        return
+    elif not valid:
+        for line in range(following_size + 1):
+            sheet.cell(index + line, 3).fill = RED
+    else:
+        for line in range(following_size + 1):
+            sheet.cell(index + line, 3).fill = GREEN
+
+
+def handle_proofline(sheet, index, proof_index):
+    output = clean_line(sheet.cell(index, 2).value)
+    reason = sheet[f"C{index}"].value
+    if reason is None or reason == "":
+        sheet.cell(index, 3).fill = YELLOW
+        return
+    relies, rule = extract_reason(reason)
+    indices = [index - (proof_index - i) for i in relies]
+    relies = list(
+        map(
+            proof.shunting_yard_statement,
+            map(lambda cell: clean_line(sheet.cell(cell, 2).value), indices),
+        )
+    )
+    if len(relies) <= 1:
+        valid = rule(*relies, proof.shunting_yard_statement(output))
+    else:
+        valid = rule(relies, proof.shunting_yard_statement(output))
+    if valid is None:
+        return
+    elif not valid:
+        sheet.cell(index, 3).fill = RED
+    else:
+        sheet.cell(index, 3).fill = GREEN
 
 
 def verify_excel(file):
@@ -70,35 +153,20 @@ def verify_excel(file):
     index = find_start(sheet["C"])
     while sheet[f"A{index}"].value is not None:
         index += 1
-        proof_index = sheet.cell(index, 1).value
-        output = clean_line(sheet.cell(index, 2).value)
-        if not output:
-            print(index)
-            continue
-        if not isinstance(proof_index, int) or "SHOW" in output.upper():
-            continue
-        reason = sheet[f"C{index}"].value
-        if reason is None or reason == "":
-            continue
-        relies, rule = extract_reason(reason)
-        indices = [index - (proof_index - i) for i in relies]
-        relies = list(
-            map(
-                proof.shunting_yard_statement,
-                map(lambda cell: clean_line(sheet.cell(cell, 2).value), indices),
-            )
-        )
-        if len(relies) <= 1:
-            valid = rule(*relies, proof.shunting_yard_statement(output))
-        else:
-            valid = rule(relies, proof.shunting_yard_statement(output))
-        if not valid:
-            sheet.cell(index, 3).fill = RED
-            print(output, reason, valid)
-            print(relies)
-            print(proof.shunting_yard_statement(output))
-        else:
-            sheet.cell(index, 3).fill = GREEN
+        try:
+            proof_index = sheet.cell(index, 1).value
+            output = clean_line(sheet.cell(index, 2).value)
+            if not output:
+                continue
+            if not isinstance(proof_index, int):
+                continue
+            if "SHOW" in output.upper():
+                handle_showline(sheet, index)
+            else:
+                handle_proofline(sheet, index, proof_index)
+        except Exception as e:
+            print(e)
+            sheet.cell(index, 3).fill = ERROR
     name = file.split(".")[0]
     wb.save(f"{name}-checked.xlsx")
 
@@ -138,12 +206,14 @@ def verify_file(f):
 
 
 if __name__ == "__main__":
+    langmap.read_dict(
+        {"symbols": {"or": "||", "not": "!", "if": ">>", "iff": "<>", "all": "@", "some": "#", "contradiction": "XX"}})
     f = ""
     home_directory = os.path.expanduser("~")
     documents_directory = os.path.join(home_directory, "Documents")
 
     while not verify_file(f):
         f = askopenfilename(
-            initialdir=documents_directory,    
-            filetypes=(("Spreadsheet files", "*.xlsx *.ods"), ("All Files", "*.*"))
+            initialdir=documents_directory,
+            filetypes=(("Spreadsheet files", "*.xlsx *.ods"), ("All Files", "*.*")),
         )

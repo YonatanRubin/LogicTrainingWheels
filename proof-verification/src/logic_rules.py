@@ -1,4 +1,6 @@
 # coding: utf-8
+default_language = {"and": "&", "or": "∨", "not": "~", "if": "→", "iff": "↔", "all": "∀", "some": "∃",
+                    "contradiction": "⨳"}
 lang_rs = "~∃∀"
 lang_ops = {"~": 3, "&": 2, "∨": 2, "→": 2, "↔": 2, "∃": 3, "∀": 3, "(": 0}
 lang_ops_args = {"~": 1, "&": 2, "∨": 2, "→": 2, "↔": 2, "∃": 2, "∀": 2}
@@ -16,13 +18,13 @@ def shunting_yard_statement(statement):
         else:
             if unit:
                 symbol_stack.append(unit)
-            unit = letter if letter.isalpha() else ""
+            unit = letter if letter.isalpha() or letter == "⨳" else ""  # need to address special characters directly
         if letter == "(":
             operator_stack.append(letter)
         elif letter in priority:
             while len(operator_stack) > 0 and (
-                (pl := priority[letter]) < (ps := priority[operator_stack[-1]])
-                or (ps == pl and operator_stack[-1] not in right_associativity)
+                    (pl := priority[letter]) < (ps := priority[operator_stack[-1]])
+                    or (ps == pl and operator_stack[-1] not in right_associativity)
             ):
                 symbol_stack.append(operator_stack.pop())
             operator_stack.append(letter)
@@ -36,7 +38,7 @@ def shunting_yard_statement(statement):
 
 
 def endswith(l1, l2):
-    return compare(l1[-len(l2) :], l2)
+    return compare(l1[-len(l2):], l2)
 
 
 def compare(l1, l2):
@@ -178,10 +180,10 @@ def all_out(relies, output):
     changed_from = set("".join(diffs(b, a, reverse=True) for a, b in zip(line, output)))
     changed_to = set("".join(diffs(a, b, reverse=True) for a, b in zip(line, output)))
     return (
-        len(changed_to) == 1
-        and len(changed_from) == 1
-        and variable[0] in changed_from
-        and not any(variable[0] in arg for arg in output)
+            len(changed_to) == 1
+            and len(changed_from) == 1
+            and variable[0] in changed_from
+            and not any(variable[0] in arg for arg in output)
     )
 
 
@@ -192,10 +194,10 @@ def exist_out(relies, output):
     changed_from = set("".join(diffs(b, a, reverse=True) for a, b in zip(line, output)))
     changed_to = set("".join(diffs(a, b, reverse=True) for a, b in zip(line, output)))
     return (
-        len(changed_to) == 1
-        and len(changed_from) == 1
-        and variable[0] in changed_from
-        and not any(variable[0] in arg for arg in output)
+            len(changed_to) == 1
+            and len(changed_from) == 1
+            and variable[0] in changed_from
+            and not any(variable[0] in arg for arg in output)
     )
 
 
@@ -216,3 +218,26 @@ def exist_in(relies, output):
     changed_from = set("".join(diffs(b, a, reverse=True) for a, b in zip(relies, line)))
     changed_to = set("".join(diffs(a, b, reverse=True) for a, b in zip(relies, line)))
     return len(changed_to) == 1 and len(changed_from) == 1 and variable[0] in changed_to
+
+
+# show rules
+def show_cd(original, following):
+    if original[-1] != "→":
+        return False
+    assumption, derivation = following
+    return assumption + derivation + ["→"] == original
+
+
+def show_id(original, following):
+    assumption, derivation = following
+    return original + ["~"] == assumption and derivation == ["⨳"]
+
+
+# ~D
+def show_td(original, following):
+    assumption, derivation = following
+    return assumption + ["~"] == original and derivation == ["⨳"]
+
+
+def show_ud(original, following):
+    return all_out(original, following)
