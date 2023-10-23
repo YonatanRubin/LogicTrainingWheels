@@ -1,7 +1,12 @@
+import itertools
 import pathlib
 from abc import abstractmethod
 from itertools import zip_longest
-from openpyxl import *
+import docx
+from docx.oxml.ns import nsdecls
+from docx.oxml import parse_xml
+
+from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from docx import *
 import logic_rules as proof
@@ -258,6 +263,40 @@ class TextProof(Proof):
         return [self.marking_format.format(a, b) if b else a for a, b in zip(self.text, self.markings)]
 
 
+class DocxProof(Proof):
+    def __init__(self, table):
+        super().__init__()
+        self.table = table
+        self.is_number = re.compile("\d+")
+        self.start = 0 if self.is_number.match(table.cell(0, 0).text) else 1
+
+    def mark_error(self, index=None):
+        self._color_cell(((index or self._index) + self.start - 1, 2), "2d0c45")
+
+    def mark_unknown(self, index=None):
+        self._color_cell(((index or self._index) + self.start - 1, 2), "FFFF0000")
+
+    def mark_failure(self, index=None):
+        self._color_cell(((index or self._index) + self.start - 1, 2), "00FF0000")
+
+    def mark_success(self, index=None):
+        self._color_cell(((index or self._index) + self.start - 1, 2), "0000FF00")
+
+    def _color_cell(self, index, color):
+        shading_elm_1 = parse_xml(f'<w:shd {{}} w:fill="{color}"/>'.format(nsdecls('w')))
+        try:
+            self.table.cell(*index)._tc.get_or_add_tcPr().append(shading_elm_1)
+        except IndexError:
+            print(index)
+
+    def _get_raw_line(self, index):
+        if index + self.start > len(self.table.rows):
+            return [None, None, None]
+        line = [x.text for x in self.table.rows[index + self.start - 1].cells]
+        line[0] = self.is_number.match(line[0]).group()
+        return line
+
+
 def find_indices(list_to_check, item_to_find):
     for idx, value in enumerate(list_to_check):
         if value == item_to_find:
@@ -315,12 +354,36 @@ def verify_text(file):
     return True
 
 
+def verify_docx(file):
+    doc = docx.Document(docx=file)
+    if len(doc.tables) == 0:  # it is written in plain text instead of tables
+        all_text = [paragraph.text.splitlines() for paragraph in doc.paragraphs]
+        flattened = list(itertools.chain(*all_text))
+        start_line_regex = re.compile(r"^\s*1[\s.|]")  # the line starts with the number 1 and seperator
+        indices = list(map(lambda x: x[0], filter(lambda x: start_line_regex.match(x[1]), enumerate(flattened))))
+        ranges = zip_longest(indices, indices[1:])
+        with open(file.replace(".docx", "-checked.txt"), "w") as checked:
+            for start, end in ranges:
+                proof = TextProof(flattened[start:end])
+                proof.handle_proof()
+                checked.writelines([p + "\n" for p in proof.get_marked()])
+        return True
+    for proof in doc.tables:
+        p = DocxProof(proof)
+        p.handle_proof()
+    print(file.replace(".docx", "-checked.docx"))
+    doc.save(file.replace(".docx", "-checked.docx"))
+    return True
+
+
 def verify_file(f):
     if f.endswith(".xlsx"):
         verify_excel(f)
         return True
     if f.endswith(".ods"):
         return verify_ods(f)
+    if f.endswith(".docx"):
+        return verify_docx(f)
     if f.endswith(".txt"):
         return verify_text(f)
     return False
@@ -340,5 +403,8 @@ if True and __name__ == "__main__":
     while not verify_file(f):
         f = askopenfilename(
             initialdir=documents_directory,
-            filetypes=(("Spreadsheet files", "*.xlsx *.ods"), ("Raw Text", "*.txt"), ("All Files", "*.*")),
+            filetypes=(("Spreadsheet files", "*.xlsx *.ods"),
+                       ("Docs files", "*.docx"),
+                       ("Raw Text", "*.txt"),
+                       ("All Files", "*.*")),
         )
