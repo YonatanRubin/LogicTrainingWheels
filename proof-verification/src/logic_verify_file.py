@@ -155,7 +155,8 @@ class Proof:
             return
         relies, rule = extract_reason(reason)
         relies = list(map(proof.shunting_yard_statement,
-                          map(lambda row: self.get_line(row)[1], relies)))
+                          map(lambda row: self.show_regex.sub("", row),  # this could use a closed showline
+                              map(lambda row: self.get_line(row)[1], relies))))
         if len(relies) <= 1:
             valid = rule(*relies, proof.shunting_yard_statement(line))
         else:
@@ -237,7 +238,7 @@ class TextProof(Proof):
 
     def mark_error(self, index=None):
         index = index or self._index
-        self.markings[index - 1] = "!ERROR"
+        self.markings[index - 1] = "!!!"
 
     def mark_unknown(self, index=None):
         index = index or self._index

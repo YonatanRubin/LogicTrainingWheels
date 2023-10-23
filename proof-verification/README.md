@@ -74,6 +74,15 @@ Sheet files assumes that there are 3 columns:
 * column **C** with the justification for each row.
 
 Each file can contain as many proofs as you want as long as each proof restarts the numbering (in column `A`)
+The verification will create a new file named `**original_file**-checked.xlsx`.
+This file will contain the original proofs and color the justification color according to the following rules:
+
+* <span style="color:green">GREEN</span> when the statement follows from the justification or a showline and it's
+  related lines are in accordance with the specified method.
+* <span style="color:red">RED</span> when it does not.
+* <span style="color:yellow">YELLOW</span> when there is no justification for the line.
+* <span style="color:purple">PURPLE</span> when there was an error in checking the justification. This usually indicates
+  that either the statement was not a valid statement or that the justification does not have enough rows as it should.
 
 ### Docs File
 
@@ -82,6 +91,16 @@ Docs files assumes a table for each proof. The table should have 3 columns:
 * First column for row number in the proof (the one you use for justification).
 * Second column with the actual statements.
 * Third column with the justification for each row.
+
+The verification will create a new file named `**original_file**-checked.docx`.
+This file will contain the original proofs and color the justification color according to the following rules:
+
+* <span style="color:green">GREEN</span> when the statement follows from the justification or a showline and it's
+  related lines are in accordance with the specified method.
+* <span style="color:red">RED</span> when it does not.
+* <span style="color:yellow">YELLOW</span> when there is no justification for the line.
+* <span style="color:purple">PURPLE</span> when there was an error in checking the justification. This usually indicates
+  that either the statement was not a valid statement or that the justification does not have enough rows as it should.
 
 You can also write as text, but due to the indifference between two different lines being a single paragraph or two
 paragraphs the output will be the same as a plain text file.
@@ -92,6 +111,7 @@ The plain text assumes a group of rows, each with a number separated in some way
 separated again from the justification.
 The separators can be a combination of the following: `,` `.` `|` or ` `(spaces).  
 Some examples for plain text:
+
 ```text
 1. A→B PR
 2| ~B | PR
@@ -99,3 +119,13 @@ Some examples for plain text:
 4. A | AS
 5. Show: ⨳.DD
 ```
+
+The verification will create a new file named `**original_file**-checked.txt`.
+This file will contain the original proofs and add an indicator for the legality of the move:
+
+* [**V**] when the statement follows from the justification or a showline and it's
+  related lines are in accordance with the specified method.
+* [**X**] when it does not.
+* [**?**] when there is no justification for the line.
+* [**!!!**] when there was an error in checking the justification. This usually indicates
+  that either the statement was not a valid statement or that the justification does not have enough rows as it should.
