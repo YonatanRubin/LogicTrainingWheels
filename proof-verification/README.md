@@ -44,11 +44,12 @@ some=∃
 ```
 
 And should be placed either in the same folder as the executable or in one of the following places:
-Windows:
+**Windows:**
 
 1. %APPDATA%/logic/proof-verification.ini  
   
-Linux:
+**Linux:**  
+
 1. /etc/proof-verification.ini
 2. /usr/local/etc/proof-verification.ini
 3. ~/.config/logic/proof-verification.ini
