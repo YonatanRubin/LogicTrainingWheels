@@ -9,17 +9,17 @@ aims to help you verify that you know the rules, assisting you in understanding 
 
 *Note:* If you want to use this tool with .ods files, you need to have LibreOffice installed.
 
+### As an app
+
+If you're not a technical user and don't want to use the terminal to check your proofs, you can download the .exe file
+from the [releases](https://github.com/YonatanRubin/LogicKeyboardLayout/releases/latestlatest/download/logic_verify_file.exe) page. Simply download and run the executable file.
+
 ### From Source
 
-1. If you don`t have Python installed, install Python first.
+1. If you don't have Python installed, install Python first.
 2. Download the source code from this library.
 3. Run `pip install -r requirements.txt` to install the necessary packages.
 4. Run `python logic_verify_file.py` to check a file.
-
-### For Windows Users
-
-If you're not a technical user and don't want to use the terminal to check your proofs, you can download the .exe file
-from the releases page. Simply download and run the executable file.
 
 ## Configuration
 
