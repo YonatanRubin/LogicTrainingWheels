@@ -12,7 +12,7 @@ aims to help you verify that you know the rules, assisting you in understanding 
 ### As an app
 
 If you're not a technical user and don't want to use the terminal to check your proofs, you can download the .exe file
-from the [releases](https://github.com/YonatanRubin/LogicKeyboardLayout/releases/latestlatest/download/logic_verify_file.exe) page. Simply download and run the executable file.
+from the [releases](https://github.com/YonatanRubin/LogicTrainingWheels/releases/latestlatest/download/logic_verify_file.exe) page. Simply download and run the executable file.
 
 ### From Source
 
